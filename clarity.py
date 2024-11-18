@@ -5,8 +5,16 @@ import json
 import serial
 from dotenv import load_dotenv
 from datetime import date
+import time
 
 # Constants and setup
+USB_PORT = "/dev/ttyACM0"
+try:
+    usb = serial.Serial(USB_PORT, 9600, timeout=2)
+    time.sleep(2)
+except:
+    print("Couldn't find the Arduino, exiting...")
+    exit()
 
 load_dotenv()
 client = OpenAI()
@@ -18,14 +26,7 @@ GPT_MODEL = "gpt-4o-mini"
 def get_secret_code():
     return "twiddlevee!"
 
-def turn():
-    USB_PORT = "/dev/ttyACM0"
-    try:
-        usb = serial.Serial(USB_PORT, 9600, timeout=2)
-    except:
-        print("Couldn't find the Arduino, exiting...")
-        exit()
-    
+def turn():    
     usb.write(b'turn')
     return "turned"
 
