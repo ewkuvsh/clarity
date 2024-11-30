@@ -1,47 +1,49 @@
 import asyncio
-import aioble
-import bluetooth
+from bleak import BleakScanner, BleakClient
 
-# Define the Service and Characteristic UUIDs (must match the peripheral)
-SERVICE_UUID = bluetooth.UUID('831c0e71-708a-4c5c-86ef-a71d64ad66ee')
-CHARACTERISTIC_UUID = bluetooth.UUID('831c0e71-708a-4c5c-86ef-a71d64ad66ee')
+# Define the UUIDs
+SERVICE_UUID = "831c0e71-708a-4c5c-86ef-a71d64ad66ee"
+CHARACTERISTIC_UUID = "831c0e71-708a-4c5c-86ef-a71d64ad66ee"
 
-async def scan_and_connect():
-    print("Scanning for peripherals...")
-    async with aioble.scan(5000) as scanner:  # Scan for 5 seconds
-        async for result in scanner:
-            print("Found device:", result.name(), result.addr_hex())
-            # Check for the target peripheral
-            if result.name() == "Nicla":
-                print("Connecting to:", result.addr_hex())
-                device = await result.connect()
-                print("Connected to device:", device)
-                return device
-    return None
+async def notification_handler(sender, data):
+    """Handle notifications from the peripheral."""
+    print(f"Notification from {sender}: {data.decode()}")  # Decode the data into a string
 
 async def main():
-    # Scan and connect to the peripheral
-    device = await scan_and_connect()
-    if not device:
+    print("Scanning for peripherals...")
+    devices = await BleakScanner.discover()
+
+    # Find the target device
+    target_device = None
+    for device in devices:
+        print(f"Found device: {device.name} [{device.address}]")
+        if device.name == "Nicla BLE":  # Replace with your peripheral's advertised name
+            target_device = device
+            break
+
+    if not target_device:
         print("Peripheral not found.")
         return
 
-    # Discover services and characteristics
-    print("Discovering services...")
-    service = await device.service(SERVICE_UUID)
-    print("Discovered service:", service)
+    print(f"Connecting to {target_device.name} [{target_device.address}]...")
+    async with BleakClient(target_device.address) as client:
+        print("Connected!")
 
-    characteristic = await service.characteristic(CHARACTERISTIC_UUID)
-    print("Discovered characteristic:", characteristic)
+        # Ensure the service and characteristic exist
+        services = await client.get_services()
+        print("Available services:")
+        for service in services:
+            print(service)
 
-    # Subscribe to notifications
-    print("Subscribing to notifications...")
-    await characteristic.subscribe()
+        # Subscribe to the characteristic notifications
+        if CHARACTERISTIC_UUID in [char.uuid for char in services.get_service(SERVICE_UUID).characteristics]:
+            print("Subscribing to notifications...")
+            await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
 
-    # Wait for notifications
-    while True:
-        print("Waiting for data...")
-        data = await characteristic.notified()
-        print("Received:", data.decode())  # Decode binary data into string
+            print("Receiving notifications. Press Ctrl+C to exit.")
+            while True:
+                await asyncio.sleep(1)
+        else:
+            print("Characteristic not found!")
 
 asyncio.run(main())
