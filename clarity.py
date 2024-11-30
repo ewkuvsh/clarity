@@ -54,87 +54,90 @@ def turn():
     return "turned"
 
 # Prepare messages and tools
-del args[0]
-today_date = date.today()
 
-prompt = ''.join(str(arg) + " " for arg in args)
-messages = [
-    {"role": "system", "content": "You are a robot."},
-    {"role": "user", "content": prompt},
-]
+while True:
+    
+    del args[0]
+    today_date = date.today()
 
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_secret_code",
-            "description": "Gets the secret code",
+    prompt = ''.join(str(arg) + " " for arg in args)
+    messages = [
+        {"role": "system", "content": "You are a robot."},
+        {"role": "user", "content": prompt},
+    ]
+
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_secret_code",
+                "description": "Gets the secret code",
+            },
         },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "turn",
-            "description": "Turns the servo 180 degrees and then back.",
+        {
+            "type": "function",
+            "function": {
+                "name": "turn",
+                "description": "Turns the servo 180 degrees and then back.",
+            },
         },
-    },
-]
+    ]
 
-# Generate completion
-completion = client.chat.completions.create(
-    model=GPT_MODEL,
-    messages=messages,
-    tools=tools
-)
+    # Generate completion
+    completion = client.chat.completions.create(
+        model=GPT_MODEL,
+        messages=messages,
+        tools=tools
+    )
 
-response_message = completion.choices[0].message
-messages.append(response_message)
+    response_message = completion.choices[0].message
+    messages.append(response_message)
+    
+    # Debug: Check the response message
+    #print("Response Message:", response_message)
+    
+    # Handle tool calls
+    
+    tool_calls = response_message.tool_calls
+    if tool_calls:
+        tool_call_id = tool_calls[0].id
+        tool_function_name = tool_calls[0].function.name
+        if tool_function_name == 'get_secret_code':
+            results = get_secret_code()
 
-# Debug: Check the response message
-#print("Response Message:", response_message)
+            messages.append({
+                "role":"tool",
+                "tool_call_id":tool_call_id,
+                "name": tool_function_name,
+                "content":results
+            })
 
-# Handle tool calls
-
-tool_calls = response_message.tool_calls
-if tool_calls:
-    tool_call_id = tool_calls[0].id
-    tool_function_name = tool_calls[0].function.name
-    if tool_function_name == 'get_secret_code':
-        results = get_secret_code()
-
-        messages.append({
-            "role":"tool",
-            "tool_call_id":tool_call_id,
-            "name": tool_function_name,
-            "content":results
-        })
-
-        model_response_with_function_call = client.chat.completions.create(
+            model_response_with_function_call = client.chat.completions.create(
             model=GPT_MODEL,
             messages=messages,
-        )
-        print(model_response_with_function_call.choices[0].message.content)
+            )
+            print(model_response_with_function_call.choices[0].message.content)
 
 
 
-    elif tool_function_name == 'turn':
-        results = turn()
+        elif tool_function_name == 'turn':
+            results = turn()
 
-        messages.append({
-            "role":"tool",
-            "tool_call_id":tool_call_id,
-            "name": tool_function_name,
-            "content":results
-        })
+            messages.append({
+                "role":"tool",
+                "tool_call_id":tool_call_id,
+                "name": tool_function_name,
+                "content":results
+            })
 
 
-        model_response_with_function_call = client.chat.completions.create(
-            model=GPT_MODEL,
-            messages=messages,
-        )
-        print(model_response_with_function_call.choices[0].message.content)
+            model_response_with_function_call = client.chat.completions.create(
+                model=GPT_MODEL,
+                messages=messages,
+            )
+            print(model_response_with_function_call.choices[0].message.content)
 
-else:
+    else:
         print(completion.choices[0].message.content)
 
-print("\n")
+    print("\n")
