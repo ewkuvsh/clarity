@@ -6,6 +6,29 @@ import serial
 from dotenv import load_dotenv
 from datetime import date
 import time
+import bleak
+from bleak import BleakScanner, BleakClient
+import asyncio
+
+
+device_address = "A8:61:0A:3E:66:14"
+characteristic_uuid = "831c0e71-708a-4c5c-86ef-a71d64ad66ee"
+
+async def scan_devices():
+    devices = await BleakScanner.discover()
+    for device in devices:
+        print(f"found device {device.name}")
+
+async def connect():
+    async with BleakClient(device_address) as client:
+        print(f"connected to {device_address}")
+
+        value = await client.read_gatt_char(characteristic_uuid)
+
+#asyncio.run(scan_devices())
+asyncio.run(connect())
+
+
 
 # Constants and setup
 USB_PORT = "/dev/ttyACM0"
@@ -26,7 +49,7 @@ GPT_MODEL = "gpt-4o-mini"
 def get_secret_code():
     return "twiddlevee!"
 
-def turn():    
+def turn():
     usb.write(b'turn')
     return "turned"
 
@@ -78,14 +101,14 @@ if tool_calls:
     tool_function_name = tool_calls[0].function.name
     if tool_function_name == 'get_secret_code':
         results = get_secret_code()
-        
+
         messages.append({
-            "role":"tool", 
-            "tool_call_id":tool_call_id, 
-            "name": tool_function_name, 
+            "role":"tool",
+            "tool_call_id":tool_call_id,
+            "name": tool_function_name,
             "content":results
         })
-        
+
         model_response_with_function_call = client.chat.completions.create(
             model=GPT_MODEL,
             messages=messages,
@@ -96,19 +119,19 @@ if tool_calls:
 
     elif tool_function_name == 'turn':
         results = turn()
-        
+
         messages.append({
-            "role":"tool", 
-            "tool_call_id":tool_call_id, 
-            "name": tool_function_name, 
+            "role":"tool",
+            "tool_call_id":tool_call_id,
+            "name": tool_function_name,
             "content":results
         })
 
-        
+
         model_response_with_function_call = client.chat.completions.create(
             model=GPT_MODEL,
             messages=messages,
-        ) 
+        )
         print(model_response_with_function_call.choices[0].message.content)
 
 else:
