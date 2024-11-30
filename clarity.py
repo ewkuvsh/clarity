@@ -55,8 +55,8 @@ def turn():
 
 # Prepare messages and tools
 
-while True:
-    
+
+def chatgpt():    
     del args[0]
     today_date = date.today()
 
