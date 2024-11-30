@@ -29,7 +29,7 @@ async def connect():
 asyncio.run(connect())
 
 
-
+chatgpt()
 # Constants and setup
 USB_PORT = "/dev/ttyACM0"
 try:
