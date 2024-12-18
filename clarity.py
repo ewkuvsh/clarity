@@ -1,49 +1,63 @@
-import asyncio
-from bleak import BleakScanner, BleakClient
+import serial
+import sys
+import RPi.GPIO as GPIO
+GPIO.setmode(GPIO.BOARD)
+import pi_servo_hat
+import time
 
-# Define the UUIDs
-SERVICE_UUID = "831c0e71-708a-4c5c-86ef-a71d64ad66ee"
-CHARACTERISTIC_UUID = "831c0e71-708a-4c5c-86ef-a71d64ad66ee"
 
-async def notification_handler(sender, data):
-    """Handle notifications from the peripheral."""
-    print(f"Notification from {sender}: {data.decode()}")  # Decode the data into a string
+def main():
+	servos = pi_servo_hat.PiServoHat()
+	servos.restart()
+	serial_port = "/dev/ttyACM0"
+	baud_rate = 115200
+	ypos = -40
+	xpos = -10
+	print(servos.get_servo_position(1))
+	print(servos.get_servo_position(0))
+	servos.move_servo_position(0,ypos)
+	servos.move_servo_position(1,xpos)
+	#exit()
+	
+	with serial.Serial(serial_port, baud_rate, timeout=1) as ser:
+		print("listening")
 
-async def main():
-    print("Scanning for peripherals...")
-    devices = await BleakScanner.discover()
+		while True:
+			line = ser.readline().decode('utf-8').strip()
+			if line:
+				
+				words = line.split()
+				#print(words[0])
+				if words[0] == "Face":
+				#	print(words[2])
 
-    # Find the target device
-    target_device = None
-    for device in devices:
-        print(f"Found device: {device.name} [{device.address}]")
-        if device.name == "Nicla BLE":  # Replace with your peripheral's advertised name
-            target_device = device
-            break
+					x = (int(words[2][2:-1]))
+					y = (int(words[3][2:-1]))
+					if y > 120 or y < 110:
+						ypos -= 5 if y > 130 else +5
+						
+						
+						
+					if x > 140 or x < 110:
+						if x > 130:
+							xpos = xpos + 1
+							
+						else:
+							xpos = xpos - 1
+							
+					servos.move_servo_position(0,ypos)	
+					servos.move_servo_position(1,xpos)
+					print("x coord is"+str(x))
+					print("y coord is" +str(y))
+					print(xpos)
+					print(ypos)
+					
+					if ypos > 80 or ypos < -180:
+						ypos = -40
+					if xpos > 160 or xpos < -160:
+						xpos = 0
 
-    if not target_device:
-        print("Peripheral not found.")
-        return
-
-    print(f"Connecting to {target_device.name} [{target_device.address}]...")
-    async with BleakClient(target_device.address) as client:
-        print("Connected!")
-
-        # Ensure the service and characteristic exist
-        services = await client.get_services()
-        print("Available services:")
-        for service in services:
-            print(service)
-
-        # Subscribe to the characteristic notifications
-        if CHARACTERISTIC_UUID in [char.uuid for char in services.get_service(SERVICE_UUID).characteristics]:
-            print("Subscribing to notifications...")
-            await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
-
-            print("Receiving notifications. Press Ctrl+C to exit.")
-            while True:
-                await asyncio.sleep(1)
-        else:
-            print("Characteristic not found!")
-
-asyncio.run(main())
+					time.sleep(.5)
+					servos.restart() 	
+					
+main()
