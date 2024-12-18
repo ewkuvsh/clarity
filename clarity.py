@@ -5,9 +5,13 @@ GPIO.setmode(GPIO.BOARD)
 import pi_servo_hat
 import time
 
+ypos = -40
+xpos = -10
+baud_rate = 115200
 
-def face_track(words):
-        if words[0] == "Face":
+def face_track(words,servos):
+	global ypos,xpos,baud_rate
+	if words[0] == "Face":
 
                 x = (int(words[2][2:-1]))
                 y = (int(words[3][2:-1]))
@@ -18,7 +22,7 @@ def face_track(words):
                                         xpos = xpos + 1
                         else:
                                 xpos = xpos - 1
-							
+
                         servos.move_servo_position(0,ypos)
                         servos.move_servo_position(1,xpos)
                         print("x coord is"+str(x))
@@ -35,9 +39,9 @@ def main():
 	servos = pi_servo_hat.PiServoHat()
 	servos.restart()
 	serial_port = "/dev/ttyACM0"
-	baud_rate = 115200
-	ypos = -40
-	xpos = -10
+#	baud_rate = 115200
+#	ypos = -40
+#	xpos = -10
 	print(servos.get_servo_position(1))
 	print(servos.get_servo_position(0))
 	servos.move_servo_position(0,ypos)
@@ -51,8 +55,8 @@ def main():
 			line = ser.readline().decode('utf-8').strip()
 			if line:
                                 words = line.split()
-                                face_track(words)
+                                face_track(words,servos)
                                 time.sleep(.5)
-                                servos.restart() 	
+                                servos.restart() 
 					
 main()
