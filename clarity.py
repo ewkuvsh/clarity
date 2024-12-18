@@ -6,6 +6,31 @@ import pi_servo_hat
 import time
 
 
+def face_track(words):
+        if words[0] == "Face":
+
+                x = (int(words[2][2:-1]))
+                y = (int(words[3][2:-1]))
+                if y > 120 or y < 110:
+                        ypos -= 5 if y > 130 else +5				
+                        if x > 140 or x < 110:
+                                if x > 130:
+                                        xpos = xpos + 1
+                        else:
+                                xpos = xpos - 1
+							
+                        servos.move_servo_position(0,ypos)
+                        servos.move_servo_position(1,xpos)
+                        print("x coord is"+str(x))
+                        print("y coord is" +str(y))
+                        print(xpos)
+                        print(ypos)
+                if ypos > 80 or ypos < -180:
+                        ypos = -40
+                if xpos > 160 or xpos < -160:
+                        xpos = 0
+
+
 def main():
 	servos = pi_servo_hat.PiServoHat()
 	servos.restart()
@@ -25,39 +50,9 @@ def main():
 		while True:
 			line = ser.readline().decode('utf-8').strip()
 			if line:
-				
-				words = line.split()
-				#print(words[0])
-				if words[0] == "Face":
-				#	print(words[2])
-
-					x = (int(words[2][2:-1]))
-					y = (int(words[3][2:-1]))
-					if y > 120 or y < 110:
-						ypos -= 5 if y > 130 else +5
-						
-						
-						
-					if x > 140 or x < 110:
-						if x > 130:
-							xpos = xpos + 1
-							
-						else:
-							xpos = xpos - 1
-							
-					servos.move_servo_position(0,ypos)	
-					servos.move_servo_position(1,xpos)
-					print("x coord is"+str(x))
-					print("y coord is" +str(y))
-					print(xpos)
-					print(ypos)
-					
-					if ypos > 80 or ypos < -180:
-						ypos = -40
-					if xpos > 160 or xpos < -160:
-						xpos = 0
-
-					time.sleep(.5)
-					servos.restart() 	
+                                words = line.split()
+                                face_track(words)
+                                time.sleep(.5)
+                                servos.restart() 	
 					
 main()
