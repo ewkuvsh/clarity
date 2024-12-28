@@ -1,0 +1,8 @@
+-go on azure and fix the web lookup
+-figure out the voice to speech stuff
+-fix pythonchat, will need to survive errors, trycatch?
+-make pythonchat a conversation instead of just individual queries
+
+-set up a timer to tell pythonchat how long 
+its been since the last interaction. instruct clarity to not 
+dwell on the same topic because its a general assistant. 
