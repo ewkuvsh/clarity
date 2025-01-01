@@ -6,6 +6,9 @@ import json
 import search
 from datetime import date
 from dotenv import load_dotenv
+import pyaudio
+import vosk
+
 
 load_dotenv()
 client = OpenAI()
@@ -108,14 +111,38 @@ def handle_input(user_input):
 
 
 if __name__ == "__main__":
+
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
+    model = vosk.Model("vosk-model-en-us-0.22-lgraph")
+    recognizer = vosk.KaldiRecognizer(model, 16000)
 
+    # Set up PyAudio to capture the microphone input
+    p = pyaudio.PyAudio()
+    stream = p.open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=16000,
+        input=True,
+        frames_per_buffer=8000,
+    )
+    stream.start_stream()
+
+    print("Start speaking...")
     while True:
-        user_input = input("You: ")
-        if user_input.lower() == "exit":
-            break
-        response = handle_input(user_input)
-        os.system('espeak ""')
-        os.system(f'espeak " {response}" &')
+        # user_input = input("You: ")
+        # if user_input.lower() == "exit":
+        #    break
+        # response = handle_input(user_input)
 
-        print(f"Clarity: {response}")
+        data = stream.read(4000)
+        if recognizer.AcceptWaveform(data):
+            result = recognizer.Result()
+            user_input = json.loads(result)["text"]
+            print(user_input)  # Output the live transcription
+
+            if user_input != "":
+                response = handle_input(user_input)
+                os.system('espeak ""')
+                os.system(f'espeak " {response}" &')
+
+                print(f"Clarity: {response}")
