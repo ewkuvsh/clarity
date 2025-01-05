@@ -113,7 +113,7 @@ def handle_input(user_input):
 if __name__ == "__main__":
 
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
-    model = vosk.Model("vosk-model-en-us-0.22-lgraph")
+    model = vosk.Model("vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 16000)
 
     # Set up PyAudio to capture the microphone input
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         #    break
         # response = handle_input(user_input)
 
-        data = stream.read(4000)
+        data = stream.read(4000,exception_on_overflow=False)
         if recognizer.AcceptWaveform(data):
             result = recognizer.Result()
             user_input = json.loads(result)["text"]
