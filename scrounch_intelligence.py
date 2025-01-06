@@ -8,7 +8,9 @@ from datetime import date
 from dotenv import load_dotenv
 import pyaudio
 import vosk
-
+import numpy as np
+from scipy import signal
+import multiprocessing
 
 load_dotenv()
 client = OpenAI()
@@ -20,7 +22,7 @@ message_history = [
         "content": (
             "You are a small quadripedal robat assistant named Clarity"
             " You are to provide answers in a natural conversational style."
-            " Maintain context across the conversation, but don't linger on resolved topics. avoid asking followup questions and do not use formatting, as your responses will be converted to speech."
+            " Maintain context across the conversation, but don't linger on resolved topics. avoid asking followup questions (like is there anything specific...) and do not use formatting, as your responses will be converted to speech."
         ),
     }
 ]
@@ -52,6 +54,17 @@ tools = [
         },
     },
 ]
+
+
+# Function to downsample audio from 44.1kHz to 16kHz using scipy
+def downsample_audio(data, original_rate, target_rate):
+    # Convert the byte data to a numpy array
+    audio_data = np.frombuffer(data, dtype=np.int16)
+    # Resample the audio to the target rate
+    number_of_samples = round(len(audio_data) * float(target_rate) / original_rate)
+    resampled_data = signal.resample(audio_data, number_of_samples)
+    # Convert resampled data back to byte format
+    return resampled_data.astype(np.int16).tobytes()
 
 
 def get_secret_code():
@@ -110,7 +123,7 @@ def handle_input(user_input):
     return response_message.content
 
 
-if __name__ == "__main__":
+async def voice_si():
 
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
     model = vosk.Model("vosk-model-small-en-us-0.15")
@@ -121,9 +134,10 @@ if __name__ == "__main__":
     stream = p.open(
         format=pyaudio.paInt16,
         channels=1,
-        rate=16000,
+        rate=44100,
         input=True,
         frames_per_buffer=8000,
+        input_device_index=0,
     )
     stream.start_stream()
 
@@ -134,8 +148,12 @@ if __name__ == "__main__":
         #    break
         # response = handle_input(user_input)
 
-        data = stream.read(4000,exception_on_overflow=False)
-        if recognizer.AcceptWaveform(data):
+        data = stream.read(4000, exception_on_overflow=False)
+        downsampled_data = downsample_audio(
+            data, original_rate=44100, target_rate=16000
+        )
+
+        if recognizer.AcceptWaveform(downsampled_data):
             result = recognizer.Result()
             user_input = json.loads(result)["text"]
             print(user_input)  # Output the live transcription

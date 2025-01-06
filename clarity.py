@@ -1,6 +1,8 @@
 import serial
 import sys
 import RPi.GPIO as GPIO
+import scrounch_intelligence
+import multiprocessing
 
 GPIO.setmode(GPIO.BOARD)
 import pi_servo_hat
@@ -35,7 +37,7 @@ def face_track(words, servos, xpos, ypos):
     return xpos, ypos
 
 
-def main():
+def look():
 
     ypos = -40
     xpos = -10
@@ -51,7 +53,7 @@ def main():
 
     servos = pi_servo_hat.PiServoHat()
     servos.restart()
-    serial_port = "/dev/ttyACM0"
+    serial_port = "/dev/ttyS0"
     print(servos.get_servo_position(1))
     print(servos.get_servo_position(0))
     servos.move_servo_position(0, ypos)
@@ -74,4 +76,23 @@ def main():
                 print(ypos)
 
 
-main()
+def main():
+
+    await asyncio.gather(look(), scrounch_intelligence.voice_si())
+
+
+if __name__ == "__main__":
+    # Create processes for the perpetual tasks
+    process_look = multiprocessing.Process(target=look, daemon=True)
+    process_voice = multiprocessing.Process(target=voice_si, daemon=True)
+
+    # Start the processes
+    process_look.start()
+    process_voice.start()
+
+    try:
+        # Keep the main process running to prevent child processes from exiting
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Main process interrupted. Exiting.")
