@@ -1,6 +1,8 @@
 import serial
 import sys
 import RPi.GPIO as GPIO
+import scrounch_intelligence
+import asyncio
 
 GPIO.setmode(GPIO.BOARD)
 import pi_servo_hat
@@ -35,7 +37,7 @@ def face_track(words, servos, xpos, ypos):
     return xpos, ypos
 
 
-def main():
+async def look():
 
     ypos = -40
     xpos = -10
@@ -74,4 +76,9 @@ def main():
                 print(ypos)
 
 
-main()
+async def main():
+
+    await asyncio.gather(look(), scrounch_intelligence.voice_si())
+
+
+asyncio.run(main())
