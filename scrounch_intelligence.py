@@ -123,7 +123,7 @@ def handle_input(user_input):
     return response_message.content
 
 
-async def voice_si():
+def voice_si():
 
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
     model = vosk.Model("vosk-model-small-en-us-0.15")

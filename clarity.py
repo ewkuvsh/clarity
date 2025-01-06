@@ -2,7 +2,11 @@ import serial
 import sys
 import RPi.GPIO as GPIO
 import scrounch_intelligence
+<<<<<<< HEAD
 import multiprocessing
+=======
+import asyncio
+>>>>>>> 21208078257b368134283db445f231f6bd4e55dd
 
 GPIO.setmode(GPIO.BOARD)
 import pi_servo_hat
@@ -76,9 +80,9 @@ def look():
                 print(ypos)
 
 
-def main():
+#def main():
 
-    await asyncio.gather(look(), scrounch_intelligence.voice_si())
+    #await asyncio.gather(look(), scrounch_intelligence.voice_si())
 
 
 if __name__ == "__main__":
