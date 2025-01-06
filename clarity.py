@@ -1,13 +1,8 @@
 import serial
 import sys
 import RPi.GPIO as GPIO
-import scrounch_intelligence
-<<<<<<< HEAD
+from scrounch_intelligence import voice_si
 import multiprocessing
-=======
-import asyncio
->>>>>>> 21208078257b368134283db445f231f6bd4e55dd
-
 GPIO.setmode(GPIO.BOARD)
 import pi_servo_hat
 import time
@@ -57,7 +52,7 @@ def look():
 
     servos = pi_servo_hat.PiServoHat()
     servos.restart()
-    serial_port = "/dev/ttyS0"
+    serial_port = "/dev/ttyACM0"
     print(servos.get_servo_position(1))
     print(servos.get_servo_position(0))
     servos.move_servo_position(0, ypos)

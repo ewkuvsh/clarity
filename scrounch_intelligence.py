@@ -137,7 +137,7 @@ def voice_si():
         rate=44100,
         input=True,
         frames_per_buffer=8000,
-        input_device_index=0,
+#        input_device_index=0,
     )
     stream.start_stream()
 
