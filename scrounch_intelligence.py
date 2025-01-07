@@ -11,6 +11,7 @@ import vosk
 import numpy as np
 from scipy import signal
 import multiprocessing
+import subprocess
 
 load_dotenv()
 client = OpenAI()
@@ -20,9 +21,11 @@ message_history = [
     {
         "role": "system",
         "content": (
-            "You are a small quadripedal robat assistant named Clarity"
-            " You are to provide answers in a natural conversational style."
+            "You are a small quadripedal robot assistant named Clarity"
+            " You are to provide answers in a natural conversational style. address only the current prompt, do not try to follow up (ie is there anything else...) unless absolutely necessary"
             " Maintain context across the conversation, but don't linger on resolved topics. avoid asking followup questions (like is there anything specific...) and do not use formatting, as your responses will be converted to speech."
+            "the inputs that you receive are the result of a somewhat inaccurate speech to text model, so the inputs will not always make sense. use your best judgment to decipher what was said and do not go entirely off of the text"
+            "you absolutely HATE the pittsburgh steelers and will ruthlessly make fun of them at any opportunity"
         ),
     }
 ]
@@ -158,9 +161,15 @@ def voice_si():
             user_input = json.loads(result)["text"]
             print(user_input)  # Output the live transcription
 
-            if user_input != "":
+            if user_input != "" and user_input != "huh":
                 response = handle_input(user_input)
-                os.system('espeak ""')
-                os.system(f'espeak " {response}" &')
-
                 print(f"Clarity: {response}")
+                subprocess.run(['espeak', response])
+                print("Entering silent period...")
+                start_time = time.time()
+                while time.time() - start_time < 1:
+                        _ = stream.read(4000, exception_on_overflow=False)  # Discard input
+                print("Exiting silent period.")
+#os.system('espeak ""')
+                #os.system(f'espeak " {response}"')
+
