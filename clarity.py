@@ -39,8 +39,8 @@ def face_track(words, servos, xpos, ypos):
 
 def look():
 
-    ypos = -40
-    xpos = -10
+    ypos = -70
+    xpos = 10
     baud_rate = 115200
 
     x_servo = 1
