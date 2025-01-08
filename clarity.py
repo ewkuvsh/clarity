@@ -2,8 +2,9 @@ import serial
 import sys
 import RPi.GPIO as GPIO
 from scrounch_intelligence import voice_si
+from screen import show_text, show_image
 import multiprocessing
-GPIO.setmode(GPIO.BOARD)
+
 import pi_servo_hat
 import time
 
@@ -75,13 +76,13 @@ def look():
                 print(ypos)
 
 
-#def main():
+# def main():
 
-    #await asyncio.gather(look(), scrounch_intelligence.voice_si())
+# await asyncio.gather(look(), scrounch_intelligence.voice_si())
 
 
 if __name__ == "__main__":
-    # Create processes for the perpetual tasks
+
     process_look = multiprocessing.Process(target=look, daemon=True)
     process_voice = multiprocessing.Process(target=voice_si, daemon=True)
 
@@ -91,6 +92,7 @@ if __name__ == "__main__":
 
     try:
         # Keep the main process running to prevent child processes from exiting
+        show_image("uwu.png")
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
