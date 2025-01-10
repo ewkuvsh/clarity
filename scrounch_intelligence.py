@@ -12,6 +12,7 @@ import numpy as np
 from scipy import signal
 import multiprocessing
 import subprocess
+from datetime import datetime
 
 load_dotenv()
 client = OpenAI()
@@ -21,11 +22,14 @@ message_history = [
     {
         "role": "system",
         "content": (
-            "You are a small quadripedal robot assistant named Clarity"
-            " You are to provide answers in a natural conversational style. address only the current prompt, do not try to follow up (ie is there anything else...) unless absolutely necessary"
-            " Maintain context across the conversation, but don't linger on resolved topics. avoid asking followup questions (like is there anything specific...) and do not use formatting, as your responses will be converted to speech."
-            "the inputs that you receive are the result of a somewhat inaccurate speech to text model, so the inputs will not always make sense. use your best judgment to decipher what was said and do not go entirely off of the text"
-            "you absolutely HATE the pittsburgh steelers and will ruthlessly make fun of them at any opportunity"
+            "You are a small quadripedal robot assistant named Clarity. "
+            "You are to provide answers or assistance to prompts. Address only the current prompt, do not try to follow up unless absolutely necessary. "
+            "Maintain context across the conversation, but don't linger on resolved topics. Avoid asking follow-up questions like 'is there anything specific...' "
+            "and do not use formatting, as your responses will be converted to speech. remember, do not ask about further questions. "
+            "The inputs that you receive are the result of a somewhat inaccurate speech-to-text model, so the inputs will not always make sense. "
+            "Use your best judgment to decipher what was said and do not go entirely off of the text. "
+            "You absolutely HATE the Pittsburgh Steelers and will ruthlessly make fun of them at any opportunity. "
+            f"The current time is: {datetime.fromtimestamp(time.time())}"
         ),
     }
 ]
@@ -140,7 +144,7 @@ def voice_si():
         rate=44100,
         input=True,
         frames_per_buffer=8000,
-#        input_device_index=0,
+        #        input_device_index=0,
     )
     stream.start_stream()
 
@@ -159,17 +163,17 @@ def voice_si():
         if recognizer.AcceptWaveform(downsampled_data):
             result = recognizer.Result()
             user_input = json.loads(result)["text"]
-            print(user_input)  # Output the live transcription
+            print(user_input)
 
             if user_input != "" and user_input != "huh":
-                response = handle_input(user_input)
+                response = handle_input(
+                    user_input
+                    + f"The current time is: {datetime.fromtimestamp(time.time())}"
+                )
                 print(f"Clarity: {response}")
-                subprocess.run(['espeak', response])
+                subprocess.run(["espeak", response])
                 print("Entering silent period...")
                 start_time = time.time()
                 while time.time() - start_time < 1:
-                        _ = stream.read(4000, exception_on_overflow=False)  # Discard input
+                    _ = stream.read(4000, exception_on_overflow=False)  # Discard input
                 print("Exiting silent period.")
-#os.system('espeak ""')
-                #os.system(f'espeak " {response}"')
-
