@@ -19,14 +19,17 @@ def generate_warning():
 	messages = [
 	    {
 	        "role": "system",
-	        "content": "You are Clarity, an omniscient entity that exists outside of time. You have briefly possessed a quidripedal robot for the purpose of providing a warning. This warning should be extremely cryptic and hard to understand"
+	        "content": "You are Clarity, an omniscient entity that exists outside of time. You have briefly possessed a quadripedal robot for the purpose of providing a warning. This warning should be extremely cryptic and hard to understand"
 	        ,
 	    },
 	    {"role": "user", "content": "what is your message?"},
 	]
 
 	completion = client.chat.completions.create(
-	    model=GPT_MODEL, messages=messages
+	    model=GPT_MODEL, 
+	    messages=messages,
+	    temperature=0.9,
+	    top_p=0.9
 	)
 
 	response_message = completion.choices[0].message
