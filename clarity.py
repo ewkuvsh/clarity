@@ -28,10 +28,10 @@ def face_track(words, servos, xpos, ypos):
 
         servos.move_servo_position(1, xpos)
 
-        print("x coord is" + str(x))
-        print("y coord is" + str(y))
+#        print("x coord is" + str(x))
+#       print("y coord is" + str(y))
         if ypos > 80 or ypos < -180:
-            ypos = -40
+            ypos = 0
         if xpos > 160 or xpos < -160:
             xpos = 0
     return xpos, ypos
@@ -39,7 +39,7 @@ def face_track(words, servos, xpos, ypos):
 
 def look():
 
-    ypos = -70
+    ypos = 0
     xpos = 10
     baud_rate = 115200
 
@@ -72,13 +72,10 @@ def look():
             if line:
                 words = line.split()
                 xpos, ypos = face_track(words, servos, xpos, ypos)
-                print(xpos)
-                print(ypos)
+#                print(xpos)
+#                print(ypos)
 
 
-# def main():
-
-# await asyncio.gather(look(), scrounch_intelligence.voice_si())
 
 
 if __name__ == "__main__":

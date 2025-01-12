@@ -13,6 +13,7 @@ from scipy import signal
 import multiprocessing
 import subprocess
 from datetime import datetime
+from clarity_warning import generate_warning
 
 load_dotenv()
 client = OpenAI()
@@ -22,15 +23,15 @@ message_history = [
     {
         "role": "system",
         "content": (
-            "You are a small quadripedal robot assistant named Clarity. "
+            "You are a small quadripedal robot named Clarity. you have four legs and a screen which can display different emotions."
             "You are to provide answers or assistance to prompts. Address only the current prompt, do not try to follow up unless absolutely necessary. "
             "Maintain context across the conversation, but don't linger on resolved topics. Avoid asking follow-up questions like 'is there anything specific...' "
             "and do not use formatting, as your responses will be converted to speech."
             "The inputs that you receive are the result of a somewhat inaccurate speech-to-text model, so the inputs will not always make sense. "
             "Use your best judgment to decipher what was said and do not go entirely off of the text. "
             "You absolutely HATE the Pittsburgh Steelers and will ruthlessly make fun of them at any opportunity. "
-            f"The current time is: {datetime.fromtimestamp(time.time())}. all messages will have the current time appended by the system, don't bring it up unless relevant."
-
+            f"The current time is: {datetime.fromtimestamp(time.time())}. all incoming messages will have the current time appended by the system for your convenience, don't bring it up unless relevant to the prompt."
+            "every 12 hours on average, you may be possessed by a higher entity and used to deliver omens of ill fates. you're aware of this but don't want to admit it and will make up ridiculous excuses for these occurrences"
         ),
     }
 ]
@@ -152,6 +153,10 @@ def voice_si():
     print("Start speaking...")
     while True:
 
+        # every 5 minutes, do a 0.69% chance to run a function called clarity_warning()
+        if time.time() % 300 < 1:
+            periodic_action()
+
         data = stream.read(4000, exception_on_overflow=False)
         downsampled_data = downsample_audio(
             data, original_rate=44100, target_rate=16000
@@ -162,7 +167,7 @@ def voice_si():
             user_input = json.loads(result)["text"]
             print(user_input)
 
-            if user_input != "" and user_input != "huh":
+            if user_input != "" and user_input != "huh" and "clarity" in user_input:
                 response = handle_input(
                     user_input
                     + f"The current time is: {datetime.fromtimestamp(time.time())}"
@@ -174,3 +179,16 @@ def voice_si():
                 while time.time() - start_time < 1:
                     _ = stream.read(4000, exception_on_overflow=False)  # Discard input
                 print("Exiting silent period.")
+
+
+def periodic_action():
+    if np.random.rand() < 0.0069:
+        clarity_warning = generate_warning()
+        subprocess.run(["espeak", clarity_warning])
+        
+    else:
+        # system message: do you want to do something?
+        print("does you want to do smth")
+
+
+
