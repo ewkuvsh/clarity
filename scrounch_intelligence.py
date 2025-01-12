@@ -18,6 +18,8 @@ from clarity_warning import generate_warning
 load_dotenv()
 client = OpenAI()
 GPT_MODEL = "gpt-4o-mini"
+require_wakeword = True
+
 
 message_history = [
     {
@@ -43,6 +45,13 @@ tools = [
         "function": {
             "name": "get_secret_code",
             "description": "Gets the secret code",
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "toggle_wakeword",
+            "description": "do this if asked or if it seems like you're being asked. This can be done an unlimited number of times",
         },
     },
     {
@@ -80,6 +89,13 @@ def get_secret_code():
     return "twiddlevee!"
 
 
+def toggle_wakeword():
+    global require_wakeword
+    require_wakeword = not require_wakeword
+    return "toggled wakeword"
+    # todo display wakeword disabled on screen if disabled
+
+
 def perform_search(query):
     return search.search(query)
 
@@ -95,38 +111,41 @@ def handle_input(user_input):
 
     response_message = completion.choices[0].message
     message_history.append(response_message)
-
+    print(response_message.tool_calls)
     if response_message.tool_calls:
         tool_call = response_message.tool_calls[0]
         tool_name = tool_call.function.name
 
         if tool_name == "get_secret_code":
             result = get_secret_code()
+        elif tool_name == "toggle_wakeword":
+            result = toggle_wakeword()
+
         elif tool_name == "search_web":
-            results = "search failed"
+            result = "search failed"
 
             data = json.loads(str(tool_call.function.arguments))
 
             query = data.get("query")
 
             # Perform the search
-            results = search.search(query)
+            result = search.search(query)
 
-            message_history.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "name": tool_name,
-                    "content": results,
-                }
-            )
+        message_history.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_name,
+                "content": result,
+            }
+        )
 
-            model_response_with_function_call = client.chat.completions.create(
-                model=GPT_MODEL,
-                messages=message_history,
-            )
+        model_response_with_function_call = client.chat.completions.create(
+            model=GPT_MODEL,
+            messages=message_history,
+        )
 
-            result = model_response_with_function_call.choices[0].message.content
+        result = model_response_with_function_call.choices[0].message.content
 
         return result
     return response_message.content
@@ -134,6 +153,7 @@ def handle_input(user_input):
 
 def voice_si():
 
+    global require_wakeword
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
     model = vosk.Model("vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 16000)
@@ -167,7 +187,11 @@ def voice_si():
             user_input = json.loads(result)["text"]
             print(user_input)
 
-            if user_input != "" and user_input != "huh" and "clarity" in user_input:
+            if (
+                user_input != ""
+                and user_input != "huh"
+                and ("clarity" in user_input or require_wakeword is False)
+            ):
                 response = handle_input(
                     user_input
                     + f"The current time is: {datetime.fromtimestamp(time.time())}"
@@ -185,10 +209,7 @@ def periodic_action():
     if np.random.rand() < 0.0069:
         clarity_warning = generate_warning()
         subprocess.run(["espeak", clarity_warning])
-        
+
     else:
         # system message: do you want to do something?
         print("does you want to do smth")
-
-
-

@@ -9,6 +9,11 @@ import pi_servo_hat
 import time
 
 
+def move_head(servos, xpos, ypos):
+    servos.move_servo_position(0, ypos)
+    servos.move_servo_position(1, xpos)
+
+
 def face_track(words, servos, xpos, ypos):
     if words[0] == "Face":
 
@@ -24,12 +29,10 @@ def face_track(words, servos, xpos, ypos):
         elif x < 110:
             xpos += 2
 
-        servos.move_servo_position(0, ypos)
+        move_head(servos, xpos, ypos)
 
-        servos.move_servo_position(1, xpos)
-
-#        print("x coord is" + str(x))
-#       print("y coord is" + str(y))
+        #        print("x coord is" + str(x))
+        #       print("y coord is" + str(y))
         if ypos > 80 or ypos < -180:
             ypos = 0
         if xpos > 160 or xpos < -160:
@@ -39,6 +42,7 @@ def face_track(words, servos, xpos, ypos):
 
 def look():
 
+    last_seen = 0
     ypos = 0
     xpos = 10
     baud_rate = 115200
@@ -72,10 +76,15 @@ def look():
             if line:
                 words = line.split()
                 xpos, ypos = face_track(words, servos, xpos, ypos)
+                last_seen = time.time()
+            if time.time() - last_seen > 5:
+                xpos = xpos - 2 * (xpos // abs(xpos)) if xpos != 0 else 0
+                ypos = ypos - 2 * (ypos // abs(ypos)) if ypos != 0 else 0
+                move_head(servos, xpos, ypos)
+
+
 #                print(xpos)
 #                print(ypos)
-
-
 
 
 if __name__ == "__main__":
