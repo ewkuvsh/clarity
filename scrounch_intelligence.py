@@ -14,11 +14,13 @@ import multiprocessing
 import subprocess
 from datetime import datetime
 from clarity_warning import generate_warning
+from clarity_comms import send_audio_data, establish_core_conn
 
 load_dotenv()
 client = OpenAI()
 GPT_MODEL = "gpt-4o-mini"
 require_wakeword = True
+sock = establish_core_conn("192.168.1.3", 5000)
 
 
 message_history = [
@@ -151,9 +153,41 @@ def handle_input(user_input):
     return response_message.content
 
 
+def obtain_processed_data(model, recognizer, data):
+    global sock
+
+    if sock is not None:
+        if send_audio_data(sock, data) == False:
+            sock = None
+            return False, ""
+
+        try:
+            user_input = sock.recv(4096)
+
+            if user_input == b"":
+                return False, ""
+
+            return True, user_input.decode("utf-8")  # Decode if needed
+
+        except (BlockingIOError, OSError):
+            return False, ""
+    else:
+
+        downsampled_data = downsample_audio(
+            data, original_rate=44100, target_rate=16000
+        )
+
+        if recognizer.AcceptWaveform(downsampled_data):
+            result = recognizer.Result()
+            user_input = json.loads(result)["text"]
+            print("onboard result:" + user_input)
+            return True, user_input
+    return False, ""
+
+
 def voice_si():
 
-    global require_wakeword
+    global require_wakeword, sock
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
     model = vosk.Model("vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 16000)
@@ -173,23 +207,24 @@ def voice_si():
     print("Start speaking...")
     while True:
 
-        # every 5 minutes, do a 0.69% chance to run a function called clarity_warning()
+        # every 5 minutes, do a 0.69% chance to run a function called clarity_warning() or other things
         if time.time() % 300 < 1:
             periodic_action()
 
         data = stream.read(4000, exception_on_overflow=False)
-        downsampled_data = downsample_audio(
-            data, original_rate=44100, target_rate=16000
-        )
 
-        if recognizer.AcceptWaveform(downsampled_data):
-            result = recognizer.Result()
-            user_input = json.loads(result)["text"]
+        accepted, user_input = obtain_processed_data(model, recognizer, data)
+
+        if accepted:
+            print("accepted")
+            print(type(user_input))
             print(user_input)
 
             if (
                 user_input != ""
                 and user_input != "huh"
+                and user_input != None
+                and user_input != "None"
                 and ("clarity" in user_input or require_wakeword is False)
             ):
                 response = handle_input(
@@ -203,13 +238,14 @@ def voice_si():
                 while time.time() - start_time < 1:
                     _ = stream.read(4000, exception_on_overflow=False)  # Discard input
                 print("Exiting silent period.")
+                user_input = None
+                accepted = False
 
 
 def periodic_action():
+    global sock
     if np.random.rand() < 0.0069:
         clarity_warning = generate_warning()
         subprocess.run(["espeak", clarity_warning])
-
-    else:
-        # system message: do you want to do something?
-        print("does you want to do smth")
+    if sock == None:
+        sock = establish_core_conn("192.168.1.3", 5000)
