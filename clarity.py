@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     try:
         # Keep the main process running to prevent child processes from exiting
-        show_image("uwu.png")
+        show_image("/home/evan/clarity/uwu.png")
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

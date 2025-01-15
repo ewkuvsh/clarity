@@ -30,7 +30,7 @@ def start_core(host, port):
             try:
                 print("Receiving audio data...")
                 while True:
-                    data = client_socket.recv(5000)  # Adjust buffer size as needed
+                    data = client_socket.recv(15000)  # Adjust buffer size as needed
                     # print(f"Processing {len(data)} bytes of audio data.")
                     if recognizer.AcceptWaveform(data):
                         result = recognizer.Result()

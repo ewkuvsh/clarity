@@ -20,7 +20,7 @@ load_dotenv()
 client = OpenAI()
 GPT_MODEL = "gpt-4o-mini"
 require_wakeword = True
-sock = establish_core_conn("192.168.1.3", 5000)
+sock = establish_core_conn("192.168.1.48", 5000)
 
 
 message_history = [
@@ -189,7 +189,7 @@ def voice_si():
 
     global require_wakeword, sock
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
-    model = vosk.Model("vosk-model-small-en-us-0.15")
+    model = vosk.Model("/home/evan/clarity/vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 16000)
 
     # Set up PyAudio to capture the microphone input
@@ -248,4 +248,4 @@ def periodic_action():
         clarity_warning = generate_warning()
         subprocess.run(["espeak", clarity_warning])
     if sock == None:
-        sock = establish_core_conn("192.168.1.3", 5000)
+        sock = establish_core_conn("192.168.1.48", 5000)
