@@ -2,104 +2,73 @@ import serial
 import sys
 import RPi.GPIO as GPIO
 from scrounch_intelligence import voice_si
+from clarity_control import look
 from screen import show_text, show_image
 import multiprocessing
+from multiprocessing import Value, Process, Queue
+import clarity_IPC
+from clarity_comms import send_audio_data, establish_core_conn
+
 
 import pi_servo_hat
 import time
 
 
-def move_head(servos, xpos, ypos):
-    servos.move_servo_position(0, ypos)
-    servos.move_servo_position(1, xpos)
-
-
-def face_track(words, servos, xpos, ypos):
-    if words[0] == "Face":
-
-        x = int(words[2][2:-1])
-        y = int(words[3][2:-1])
-        if y > 120:  # or y < 110:
-            ypos += 2
-        elif y < 110:
-            ypos -= 2
-
-        if x > 140:
-            xpos -= 2
-        elif x < 110:
-            xpos += 2
-
-        move_head(servos, xpos, ypos)
-
-        #        print("x coord is" + str(x))
-        #       print("y coord is" + str(y))
-        if ypos > 80 or ypos < -180:
-            ypos = 0
-        if xpos > 160 or xpos < -160:
-            xpos = 0
-    return xpos, ypos
-
-
-def look():
-
-    last_seen = 0
-    ypos = 0
-    xpos = 10
-    baud_rate = 115200
-
-    x_servo = 1
-    y_servo = 0
-
-    left_front_leg = 2
-    left_back_leg = 3
-    right_front_leg = 4
-    right_back_leg = 5
-
-    servos = pi_servo_hat.PiServoHat()
-    servos.restart()
-    serial_port = "/dev/ttyACM0"
-    print(servos.get_servo_position(1))
-    print(servos.get_servo_position(0))
-    servos.move_servo_position(0, ypos)
-    servos.move_servo_position(1, xpos)
-
-    servos.move_servo_position(2, 0)
-    servos.move_servo_position(3, 0)
-    servos.move_servo_position(4, 0)
-    servos.move_servo_position(5, 0)
-
-    with serial.Serial(serial_port, baud_rate, timeout=1) as ser:
-        print("listening")
-
-        while True:
-            line = ser.readline().decode("utf-8").strip()
-            if line:
-                words = line.split()
-                xpos, ypos = face_track(words, servos, xpos, ypos)
-                last_seen = time.time()
-            if time.time() - last_seen > 5:
-                xpos = xpos - 2 * (xpos // abs(xpos)) if xpos != 0 else 0
-                ypos = ypos - 2 * (ypos // abs(ypos)) if ypos != 0 else 0
-                move_head(servos, xpos, ypos)
-
-
-#                print(xpos)
-#                print(ypos)
-
-
 if __name__ == "__main__":
+    sock = establish_core_conn("192.168.1.48", 5000)
+    core_connected = Value("b", False)
+    voice_send_queue = Queue()
+    look_send_queue = Queue()
+    recv_queue = Queue()  # non-voice will have a shared send queue
 
-    process_look = multiprocessing.Process(target=look, daemon=True)
-    process_voice = multiprocessing.Process(target=voice_si, daemon=True)
+    process_look = multiprocessing.Process(
+        target=look,
+        args=(
+            core_connected,
+            recv_queue,
+            look_send_queue,
+        ),
+        daemon=True,
+    )
+    process_voice = multiprocessing.Process(
+        target=voice_si,
+        args=(core_connected, recv_queue, voice_send_queue),
+        daemon=True,
+    )
 
     # Start the processes
+
     process_look.start()
     process_voice.start()
 
     try:
         # Keep the main process running to prevent child processes from exiting
-        show_image("/home/evan/clarity/uwu.png")
+        # show_image("/home/evan/clarity/uwu.png")
         while True:
-            time.sleep(1)
+            send_audio_data(sock, recv_queue.get())
+            try:
+                voice_send_queue.put(sock.recv(4096).decode("utf-8"))
+            except BlockingIOError:
+                continue
+
     except KeyboardInterrupt:
         print("Main process interrupted. Exiting.")
+
+
+# idea, spawned processes has a send queue and a recv queue.
+
+# if sock is not None:
+#     if send_audio_data(sock, data) == False:
+#         sock = None
+#         return False, ""
+
+#    try:
+#        user_input = sock.recv(4096)
+
+#        if user_input == b"":
+#           return False, ""
+
+#      return True, user_input.decode("utf-8")  # Decode if needed
+
+#  except (BlockingIOError, OSError):
+#     return False, ""

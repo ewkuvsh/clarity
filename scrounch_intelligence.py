@@ -14,13 +14,13 @@ import multiprocessing
 import subprocess
 from datetime import datetime
 from clarity_warning import generate_warning
-from clarity_comms import send_audio_data, establish_core_conn
+import clarity_IPC
 
 load_dotenv()
 client = OpenAI()
 GPT_MODEL = "gpt-4o-mini"
 require_wakeword = True
-sock = establish_core_conn("192.168.1.48", 5000)
+# sock = establish_core_conn("192.168.1.48", 5000)
 
 
 message_history = [
@@ -31,7 +31,7 @@ message_history = [
             "You are to provide answers or assistance to prompts. Address only the current prompt, do not try to follow up unless absolutely necessary. "
             "Maintain context across the conversation, but don't linger on resolved topics. Avoid asking follow-up questions like 'is there anything specific...' "
             "and do not use formatting, as your responses will be converted to speech."
-            "The inputs that you receive are the result of a somewhat inaccurate speech-to-text model, so the inputs will not always make sense. "
+            "The inputs that you receive are the result of a somewhat inaccurate speech-to-text model, so the inputs will not always make sense. one common mistranslation is hello -> pillow "
             "Use your best judgment to decipher what was said and do not go entirely off of the text. "
             "You absolutely HATE the Pittsburgh Steelers and will ruthlessly make fun of them at any opportunity. "
             f"The current time is: {datetime.fromtimestamp(time.time())}. all incoming messages will have the current time appended by the system for your convenience, don't bring it up unless relevant to the prompt."
@@ -153,24 +153,18 @@ def handle_input(user_input):
     return response_message.content
 
 
-def obtain_processed_data(model, recognizer, data):
-    global sock
+def obtain_processed_data(
+    model, recognizer, data, core_connected, send_queue, recv_queue
+):
 
-    if sock is not None:
-        if send_audio_data(sock, data) == False:
-            sock = None
+    if core_connected:
+        send_queue.put(data)
+
+        if recv_queue.empty():
             return False, ""
+        else:
+            return True, recv_queue.get()
 
-        try:
-            user_input = sock.recv(4096)
-
-            if user_input == b"":
-                return False, ""
-
-            return True, user_input.decode("utf-8")  # Decode if needed
-
-        except (BlockingIOError, OSError):
-            return False, ""
     else:
 
         downsampled_data = downsample_audio(
@@ -185,9 +179,9 @@ def obtain_processed_data(model, recognizer, data):
     return False, ""
 
 
-def voice_si():
+def voice_si(core_connected, send_queue, recv_queue):
 
-    global require_wakeword, sock
+    global require_wakeword
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
     model = vosk.Model("/home/evan/clarity/vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 16000)
@@ -213,7 +207,9 @@ def voice_si():
 
         data = stream.read(4000, exception_on_overflow=False)
 
-        accepted, user_input = obtain_processed_data(model, recognizer, data)
+        accepted, user_input = obtain_processed_data(
+            model, recognizer, data, core_connected, send_queue, recv_queue
+        )
 
         if accepted:
             print("accepted")
@@ -247,5 +243,5 @@ def periodic_action():
     if np.random.rand() < 0.0069:
         clarity_warning = generate_warning()
         subprocess.run(["espeak", clarity_warning])
-    if sock == None:
-        sock = establish_core_conn("192.168.1.48", 5000)
+    # if sock == None:
+    # sock = establish_core_conn("192.168.1.48", 5000)

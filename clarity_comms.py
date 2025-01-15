@@ -1,4 +1,5 @@
 import socket
+import clarity_IPC
 
 
 def establish_core_conn(server_ip, server_port):
@@ -41,3 +42,14 @@ if __name__ == "__main__":
     server_ip = "192.168.1.3"  # The IP address of the server
     server_port = 5000  # The port the server is listening on
     sock = establish_core_conn(server_ip, server_port)
+
+
+def recv_message(sock):
+    # Read the first 4 bytes to get the message length
+    raw_length = sock.recv(4)
+    if not raw_length:
+        raise ConnectionError("Socket connection closed")
+    length = int.from_bytes(raw_length, "big")
+
+    # Read the actual data
+    return recv_all(sock, length)

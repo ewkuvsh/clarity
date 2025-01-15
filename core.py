@@ -1,6 +1,7 @@
 import socket
 import vosk
 import json
+import clarity_IPC
 
 model = vosk.Model("vosk-model-en-us-0.42-gigaspeech")
 recognizer = vosk.KaldiRecognizer(model, 44100)
