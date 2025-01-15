@@ -3,17 +3,14 @@ import socket
 
 def establish_core_conn(server_ip, server_port):
     try:
-        # Create a socket object
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.settimeout(3)
 
-        # Connect to the server
         client_socket.connect((server_ip, server_port))
         print(f"Connected to {server_ip}:{server_port}")
 
-        # Send a message to the server
         client_socket.sendall(b"Hello, server! This is the client.")
 
-        # Receive response from the server
         response = client_socket.recv(1024)
         print(f"Server response: {response.decode()}")
         client_socket.setblocking(False)
@@ -34,10 +31,3 @@ def send_audio_data(client_socket, data):
         print(f"Error sending data: {e}")
         client_socket.close()
         return False
-
-
-if __name__ == "__main__":
-    # Server IP and port (replace with the actual IP and port)
-    server_ip = "192.168.1.3"  # The IP address of the server
-    server_port = 5000  # The port the server is listening on
-    sock = establish_core_conn(server_ip, server_port)

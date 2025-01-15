@@ -20,7 +20,7 @@ load_dotenv()
 client = OpenAI()
 GPT_MODEL = "gpt-4o-mini"
 require_wakeword = True
-sock = establish_core_conn("192.168.1.48", 5000)
+sock = None
 
 
 message_history = [
@@ -185,9 +185,12 @@ def obtain_processed_data(model, recognizer, data):
     return False, ""
 
 
-def voice_si():
+def voice_si(send_queue, core_address):
 
     global require_wakeword, sock
+    sock = establish_core_conn(core_address, 5000)
+    print(sock)
+
     print("ChatGPT Continuous Conversation. Type 'exit' to end.")
     model = vosk.Model("/home/evan/clarity/vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 16000)
@@ -209,15 +212,13 @@ def voice_si():
 
         # every 5 minutes, do a 0.69% chance to run a function called clarity_warning() or other things
         if time.time() % 300 < 1:
-            periodic_action()
+            periodic_action(core_address)
 
         data = stream.read(4000, exception_on_overflow=False)
 
         accepted, user_input = obtain_processed_data(model, recognizer, data)
 
         if accepted:
-            print("accepted")
-            print(type(user_input))
             print(user_input)
 
             if (
@@ -242,10 +243,10 @@ def voice_si():
                 accepted = False
 
 
-def periodic_action():
+def periodic_action(core_address):
     global sock
     if np.random.rand() < 0.0069:
         clarity_warning = generate_warning()
         subprocess.run(["espeak", clarity_warning])
     if sock == None:
-        sock = establish_core_conn("192.168.1.48", 5000)
+        sock = establish_core_conn(core_address, 5000)
