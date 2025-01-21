@@ -22,7 +22,7 @@ def arp_for_ip(MAC, iface):
 
 def establish_core_conn(server_ip, server_port):
     try:
-        server_ip = "192.168.1.3"  # arp_for_ip(server_MAC, iface="wlan0") privilege issue i will solve later
+        server_ip = "192.168.1.56"  # arp_for_ip(server_MAC, iface="wlan0") privilege issue i will solve later
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.settimeout(3)
 
@@ -42,7 +42,7 @@ def establish_core_conn(server_ip, server_port):
 
 def establish_core_visual_conn(server_ip, server_port):
     try:
-        server_ip = "192.168.1.3"  # arp_for_ip(server_MAC, iface="wlan0") privilege issue i will solve later
+        server_ip = "192.168.1.56"  # arp_for_ip(server_MAC, iface="wlan0") privilege issue i will solve later
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.settimeout(1)
         client_socket.connect((server_ip, server_port))
