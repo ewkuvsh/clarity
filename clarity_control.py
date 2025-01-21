@@ -58,14 +58,14 @@ def core_face_track(result, servos, xpos, ypos):
     x = int(result[0])
     y = int(result[1])
     if y > 120:  # or y < 110:
-        ypos += 3
+        ypos += 4
     elif y < 160:
-        ypos -= 3
+        ypos -= 4
 
     if x > 320:
-        xpos -= 3
+        xpos -= 4
     elif x < 360:
-        xpos += 3
+        xpos += 4
 
     move_head(servos, xpos, ypos)
 
