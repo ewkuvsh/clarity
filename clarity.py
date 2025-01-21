@@ -11,7 +11,8 @@ import time
 
 if __name__ == "__main__":
 
-    core_address = "198.162.1.48"
+    core_address = "8c:1d:96:bb:3d:e9"
+
     recv_queue = Queue()
 
     process_look = multiprocessing.Process(
@@ -40,6 +41,16 @@ if __name__ == "__main__":
         # Keep the main process running to prevent child processes from exiting
         show_image("/home/evan/clarity/uwu.png")
         while True:
-            time.sleep(1)
+            if not recv_queue.empty():
+
+                new_face = recv_queue.get()
+
+                if new_face == "uwu":
+                    show_image("/home/evan/clarity/uwu.png")
+                elif new_face == "confused":
+                    show_image("/home/evan/clarity/confused.png")
+                elif new_face == "happy":
+                    show_image("/home/evan/clarity/happy.png")
+
     except KeyboardInterrupt:
         print("Main process interrupted. Exiting.")

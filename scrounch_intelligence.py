@@ -14,7 +14,7 @@ import multiprocessing
 import subprocess
 from datetime import datetime
 from clarity_warning import generate_warning
-from clarity_comms import send_audio_data, establish_core_conn
+from clarity_comms import send_data, establish_core_conn
 
 load_dotenv()
 client = OpenAI()
@@ -157,7 +157,7 @@ def obtain_processed_data(model, recognizer, data):
     global sock
 
     if sock is not None:
-        if send_audio_data(sock, data) == False:
+        if send_data(sock, data) == False:
             sock = None
             return False, ""
 
