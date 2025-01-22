@@ -21,7 +21,7 @@ client = OpenAI()
 GPT_MODEL = "gpt-4o-mini"
 require_wakeword = True
 sock = None
-
+send_queue = None
 
 message_history = [
     {
@@ -35,6 +35,7 @@ message_history = [
             "Use your best judgment to decipher what was said and do not go entirely off of the text. "
             "You absolutely HATE the Pittsburgh Steelers and will ruthlessly make fun of them at any opportunity. "
             f"The current time is: {datetime.fromtimestamp(time.time())}. all incoming messages will have the current time appended by the system for your convenience, don't bring it up unless relevant to the prompt."
+            "use your change_expression function to display new emotions if the prompt makes sense to do so. for example, if you're uncertain what a message means, use change_expression and set the expression to confused"
             "every 12 hours on average, you may be possessed by a higher entity and used to deliver omens of ill fates. you're aware of this but don't want to admit it and will make up ridiculous excuses for these occurrences"
         ),
     }
@@ -54,6 +55,23 @@ tools = [
         "function": {
             "name": "toggle_wakeword",
             "description": "do this if asked or if it seems like you're being asked. This can be done an unlimited number of times",
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "change_expression",
+            "description": "changes the expression displayed on your face, then returns to a neutral expression automatically. this should be called when you want to express a different emotion. For example, if you are confused about message content, you should change to the confused expression. You currently have access to: happy, uwu, and confused.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "The expression you want to show. currently you have the following expressions available: happy, uwu, and confused.",
+                    }
+                },
+                "required": ["query"],
+            },
         },
     },
     {
@@ -98,11 +116,20 @@ def toggle_wakeword():
     # todo display wakeword disabled on screen if disabled
 
 
+def change_expression(expression):
+    global send_queue
+    send_queue.put(expression)
+    return "expression changed successfully"
+
+
 def perform_search(query):
     return search.search(query)
 
 
 # Main conversation loop
+
+
+# TODO: handle multiple tool calls
 def handle_input(user_input):
     global message_history
     message_history.append({"role": "user", "content": user_input})
@@ -122,6 +149,11 @@ def handle_input(user_input):
             result = get_secret_code()
         elif tool_name == "toggle_wakeword":
             result = toggle_wakeword()
+
+        elif tool_name == "change_expression":
+            data = json.loads(str(tool_call.function.arguments))
+
+            result = change_expression(data.get("expression"))
 
         elif tool_name == "search_web":
             result = "search failed"
@@ -185,9 +217,10 @@ def obtain_processed_data(model, recognizer, data):
     return False, ""
 
 
-def voice_si(send_queue, core_address):
+def voice_si(send_queue_param, core_address):
+    global require_wakeword, sock, send_queue
 
-    global require_wakeword, sock
+    send_queue = send_queue_param
     sock = establish_core_conn(core_address, 5000)
     print(sock)
 
