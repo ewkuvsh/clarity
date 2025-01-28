@@ -134,6 +134,6 @@ if __name__ == "__main__":
     )
     process_core_voice.start()
 
-    # process_core_look.start()
+    process_core_look.start()
 
     start_core_visual(socket.gethostbyname(socket.gethostname()), 5001)
