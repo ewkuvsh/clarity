@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     try:
         # Keep the main process running to prevent child processes from exiting
-        show_image("/home/evan/clarity/uwu.png")
+        show_image("/home/evan/clarity/happy.png")
         while True:
             if not recv_queue.empty():
 

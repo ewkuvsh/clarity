@@ -2,7 +2,6 @@ import board
 import busio
 from adafruit_ssd1306 import SSD1306_I2C
 from PIL import Image, ImageDraw, ImageFont
-import clarity_IPC
 
 
 import pi_servo_hat
