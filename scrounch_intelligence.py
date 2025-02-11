@@ -127,6 +127,9 @@ def perform_search(query):
 
 
 # Main conversation loop
+
+
+# TODO: handle multiple tool calls
 def handle_input(user_input):
     global message_history
     message_history.append({"role": "user", "content": user_input})
